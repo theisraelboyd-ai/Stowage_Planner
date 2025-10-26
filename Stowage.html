@@ -1,0 +1,1523 @@
+<head>
+  <meta charset="utf-8" />
+  <title>Carousel Stow — Side View (linear only)</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <style>
+    /* --- Base Variables and Styles --- */
+    :root {
+      --topbar:#0d162a;
+  --tabs:#0d162a;
+  --overlay: rgba(0,0,0,.5);
+  --pill-bg:#0a1427;
+  --entry-bg:#0c1528;
+  --wizard-bg:#0b1220;
+      /* Light theme (toggle by adding class="light" on <body>) */
+body.light{
+  --bg:#f7f8fb; --ink:#0b1220; --muted:#475569; --line:#d5dde8;
+  --card:#ffffff; --field:#f0f4f8; --acc:#0ea5e9; --ok:#16a34a; --bad:#dc2626;
+  --bar:56px;
+  --topbar: #ffffff;
+  --tabs: #ffffff;
+  --overlay: rgba(0,0,0,.35);
+}
+      --bg: #0b1225;
+      --panel: #0e162c;
+      --panel-2: #0b1328;
+      --line: #213055;
+      --ink: #e5e7eb;
+      --muted: #9ca3af;
+      --inner: #165a72;
+      --outer: #165a72;
+      --floor: #2c3e63;
+      --good: #34d399;
+      --warn: #f59e0b;
+      --bad: #f87171;
+      --accent: #60a5fa;
+      --ring: rgba(96, 165, 250, .45);
+      --shadow: 0 10px 30px rgba(0, 0, 0, .35);
+      --tipdx: 6px;
+      --tipdy: 6px;
+    }
+
+    /* Base */
+    html, body { height: 100%; margin: 0; background: var(--bg); color: var(--ink); font: 14px/1.45 system-ui, -apple-system, Segoe UI, Roboto, "Helvetica Neue", Arial; transition: background-color 0.3s ease, color 0.3s ease; }
+    *, *:before, *:after { box-sizing: border-box }
+    :focus { outline: none }
+    ::selection { background: rgba(96, 165, 250, .25) }
+
+    /* Top bar */
+    .bar { position: sticky; top: 0; z-index: 50; display: flex; align-items: center; justify-content: space-between; padding: 12px 16px; background: linear-gradient(180deg, rgba(14, 22, 44, .95), rgba(14, 22, 44, .85)); border-bottom: 1px solid var(--line); backdrop-filter: saturate(1.1) blur(6px); transition: background 0.3s ease, border-color 0.3s ease; }
+    .bar b { letter-spacing: .3px; color: var(--ink); transition: color 0.3s ease; }
+    .toolbar { display: flex; gap: 10px; flex-wrap: wrap }
+    .btn { appearance: none; border: 1px solid var(--line); background: var(--panel-2); color: var(--ink); padding: 8px 10px; border-radius: 10px; cursor: pointer; transition: .15s ease; box-shadow: 0 1px 0 rgba(255, 255, 255, .04) inset; }
+    .btn:hover { transform: translateY(-1px); border-color: #2a3a6a; background: #0d1730 }
+    .btn:active { transform: translateY(0) }
+    .btn--primary { background: linear-gradient(180deg, #0e1a36, #0b142a); border-color: #2a3a6a }
+    .btn--ghost { background: transparent }
+    .btn--danger { border-color: #7f1d1d; color: #fecaca }
+    .btn:focus { box-shadow: 0 0 0 3px var(--ring) }
+
+    /* Layout */
+    .wrap { padding: 18px }
+    .container { max-width: 1200px; margin: 0 auto; display: grid; gap: 16px }
+
+    /* Panels / Cards */
+    .panel { background: linear-gradient(180deg, #0f1830, #0d162c); border: 1px solid var(--line); border-radius: 14px; box-shadow: var(--shadow); overflow: hidden; transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease; }
+    .panel h3 { margin: 0; padding: 12px 14px; border-bottom: 1px solid var(--line); font-size: 13px; color: #c7d2fe; letter-spacing: .4px; display: flex; align-items: center; justify-content: space-between; transition: color 0.3s ease, border-color 0.3s ease; }
+
+    /* Forms */
+    .grid { display: grid; gap: 12px; padding: 12px }
+    .grid.tank { grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)) }
+    .field { display: flex; flex-direction: column; gap: 6px }
+    .field label { font-size: 11px; color: var(--muted); letter-spacing: .2px; transition: color 0.3s ease; }
+    input, select { width: 100%; background: #0a1223; color: var(--ink); border: 1px solid #1f2a4a; border-radius: 10px; padding: 9px 10px; transition: .15s ease }
+    input:hover, select:hover { border-color: #2a3a6a }
+    input:focus, select:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px var(--ring) }
+    select { padding-right: 28px }
+
+    /* Board + stats */
+    .board { position: relative; border: 1px solid var(--line); border-radius: 14px; overflow: hidden; background: var(--panel); box-shadow: var(--shadow); transition: background 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease; }
+    .boardHeader { display: flex; flex-wrap: wrap; gap: 10px 16px; align-items: center; padding: 12px 14px; background: linear-gradient(180deg, #0f1830, #0d162c); border-bottom: 1px solid var(--line); color: #c7d2fe; transition: background 0.3s ease, border-color 0.3s ease, color 0.3s ease; }
+    .stat { display: inline-flex; align-items: center; gap: 6px; padding: 6px 8px; border: 1px solid #24345f; background: #0a1326; border-radius: 999px; font-size: 12px; transition: background-color 0.3s ease, border-color 0.3s ease; }
+    .stat b { font-size: 12px; color: #e5eafd; font-weight: 600; transition: color 0.3s ease; }
+    .board::before { content: ""; position: absolute; inset: 0; z-index: 0; pointer-events: none; background: linear-gradient(to right, rgba(255, 255, 255, .03) 1px, transparent 1px), linear-gradient(to top, rgba(255, 255, 255, .03) 1px, transparent 1px); background-size: 40px 40px, 40px 40px; mask-image: linear-gradient(to bottom, rgba(0, 0, 0, .6), rgba(0, 0, 0, 1)); transition: background 0.3s ease, opacity 0.3s ease; }
+    svg { display: block; width: 100%; position: relative; z-index: 1 }
+
+    /* Cable cards */
+    .cables { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 12px; padding: 12px }
+    .card { border: 1px solid var(--line); border-radius: 12px; padding: 10px; background: #0b142a; transition: .15s ease; box-shadow: 0 6px 18px rgba(0, 0, 0, .28) }
+    .card:hover { transform: translateY(-1px); border-color: #2a3a6a }
+    .cardHead { display: flex; align-items: center; justify-content: space-between; margin-bottom: 10px }
+    .chip { display: inline-flex; align-items: center; gap: 6px; padding: 4px 8px; border: 1px solid #24345f; background: #0a1326; border-radius: 8px; font-size: 11px; color: #cbd5e1; transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease; }
+    .row { display: grid; gap: 10px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)) }
+    .summary { margin-top: 8px; color: #a5b4fc; font-size: 12px; transition: color 0.3s ease; }
+
+    /* Badges */
+    .cap { padding: 2px 8px; border-radius: 999px; border: 1px solid var(--line); background: #0a1223; transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease; }
+    .cap.bad { background: rgba(248, 113, 113, 0.1); border-color: #7f1d1d; color: #fecaca }
+    .cap.warn { background: rgba(245, 158, 11, 0.1); border-color: #7c2d12; color: #fde68a }
+    .heightBadge { padding: 2px 8px; border-radius: 6px; background: rgba(248, 113, 113, 0.1); border: 1px solid #7f1d1d; color: #fecaca; transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease; }
+
+    /* Tooltip */
+    .tooltip { position: absolute; pointer-events: none; background: #0b1220; color: #e5e7eb; border: 1px solid #24345f; border-radius: 10px; padding: 10px 11px; font-size: 12px; z-index: 100; display: none; max-width: 320px; box-shadow: 0 18px 40px rgba(0, 0, 0, .45); transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease; }
+    .tooltip b { color: #93c5fd; transition: color 0.3s ease; }
+    .tooltip hr { border: 0; border-top: 1px solid #1d2a4a; margin: 8px 0; transition: border-color 0.3s ease; }
+
+    /* Utility */
+    .nss { vector-effect: non-scaling-stroke }
+
+    /* --- Marker flag & stronger highlight --- */
+    .marker-flag { pointer-events: none; }
+    .circle--marked { stroke: #facc15 !important; stroke-width: 3 !important; opacity: 1 !important; filter: drop-shadow(0 0 8px rgba(250, 204, 21, .65)) drop-shadow(0 0 3px rgba(255, 255, 255, .45)); }
+
+    /* Interact affordance */
+    #svg circle { cursor: crosshair; }
+    #svg [data-end] { cursor: help; }
+
+    /* --- Snow Mode Styles --- */
+    .snowflake { position: fixed; top: -10px; background-color: rgba(255, 255, 255, 0.8); border-radius: 50%; pointer-events: none; z-index: 9999; will-change: transform; }
+
+    /* --- Light Mode Theme --- */
+body.light-mode {
+  --bg: #f3f4f6;
+  --panel: #ffffff;
+  --panel-2: #f9fafb;
+  --line: #d1d5db;
+  --ink: #1f2937;
+  --muted: #6b7280;
+  --inner: #a5f3fc;
+  --outer: #a5f3fc;
+  --floor: #9ca3af;
+  --accent: #3b82f6;
+  --ring: rgba(59, 130, 246, 0.45);
+  --shadow: 0 10px 20px rgba(0, 0, 0, 0.1), 0 3px 6px rgba(0, 0, 0, 0.08);
+}
+
+/* Force background to propagate (prevents “top half only” look) */
+body.light-mode,
+body.light-mode html,
+body.light-mode .wrap,
+body.light-mode .container {
+  background: var(--bg) !important;
+}
+
+body.light-mode .bar {
+  background: linear-gradient(180deg, #ffffff, #f3f4f6);
+  border-bottom-color: var(--line);
+}
+body.light-mode .bar b { color: var(--ink); }
+
+body.light-mode .panel {
+  background: var(--panel);
+  border-color: var(--line);
+  box-shadow: var(--shadow);
+}
+body.light-mode .panel h3 {
+  color: var(--ink);
+  border-bottom-color: var(--line);
+}
+
+body.light-mode .field label { color: var(--muted); }
+
+body.light-mode input,
+body.light-mode select {
+  background: var(--panel);
+  border-color: var(--line);
+  color: var(--ink);
+}
+body.light-mode input:hover,
+body.light-mode select:hover { border-color: #9ca3af; }
+body.light-mode input:focus,
+body.light-mode select:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px var(--ring); }
+
+body.light-mode .btn { background: var(--panel); border-color: var(--line); color: var(--muted); box-shadow: 0 1px 0 rgba(0,0,0,.04); }
+body.light-mode .btn:hover { background: var(--panel-2); border-color: #9ca3af; }
+body.light-mode .btn--primary { background: #e0e7ff; border-color: #a5b4fc; color: #3730a3; }
+body.light-mode .btn--danger { background: #fee2e2; border-color: #fca5a5; color: #991b1b; }
+
+body.light-mode .board {
+  background: var(--panel);
+  border-color: var(--line);
+  box-shadow: var(--shadow);
+}
+body.light-mode .boardHeader {
+  background: linear-gradient(180deg, #f9fafb, #f3f4f6);
+  border-bottom-color: var(--line);
+  color: var(--muted);
+}
+body.light-mode .stat { background: var(--panel); border-color: #e5e7eb; color: var(--muted); }
+body.light-mode .stat b { color: var(--ink); }
+
+body.light-mode .board::before {
+  background: linear-gradient(to right, rgba(0,0,0,.05) 1px, transparent 1px),
+              linear-gradient(to top,   rgba(0,0,0,.05) 1px, transparent 1px);
+  background-size: 40px 40px, 40px 40px;
+  mask-image: none;
+  opacity: 0.6;
+}
+
+body.light-mode .card { background: var(--panel); border-color: var(--line); }
+body.light-mode .chip { background: #e5e7eb; border-color: #d1d5db; color: #374151; }
+body.light-mode .summary { color: var(--muted); }
+
+body.light-mode .cap { background: #e5e7eb; border-color: var(--line); color: var(--muted); }
+body.light-mode .cap.bad,
+body.light-mode .heightBadge {
+  background: rgba(239,68,68,0.1);
+  border-color: #fca5a5;
+  color: #b91c1c;
+}
+body.light-mode .cap.warn {
+  background: rgba(245,158,11,0.1);
+  border-color: #fdba74;
+  color: #9a3412;
+}
+
+body.light-mode .tooltip {
+  background: #ffffff;
+  color: #1f2937;
+  border-color: #9ca3af;
+  box-shadow: 0 10px 25px rgba(0,0,0,.15);
+}
+body.light-mode .tooltip b { color: #3b82f6; }
+body.light-mode .tooltip hr { border-top-color: #e5e7eb; }
+
+body.light-mode .circle--marked {
+  stroke: var(--bad) !important;
+  stroke-width: 3 !important;
+  opacity: 1 !important;
+  filter: drop-shadow(0 0 8px rgba(248, 113, 113, .65))
+          drop-shadow(0 0 3px rgba(255, 100, 100, .45));
+}
+
+body.light-mode .marker-flag rect { fill: #fcd34d; stroke: #4b5563; }
+body.light-mode .marker-flag line { stroke: #4b5563; }
+body.light-mode .marker-flag text { fill: #1f2937; }
+body.light-mode svg text { fill: #374151; } /* General SVG text */
+
+
+    /* --- Print Mode Styles --- (Keep separate) --- */
+    .print-mode rect[fill="var(--inner)"],
+    .print-mode rect[fill="var(--outer)"] { fill: #aaaaaa !important; }
+    .print-mode line[stroke="var(--floor)"] { stroke: #666666 !important; }
+    .print-mode [data-end] circle { fill: #eee !important; stroke: #999 !important; stroke-width: 1 !important; }
+    .print-mode [data-end] text { fill: #555 !important; }
+    .print-mode .marker-flag line { stroke: #333 !important; }
+    .print-mode .marker-flag rect { fill: #fef08a !important; stroke: #333 !important; }
+    .print-mode .marker-flag text { fill: #111 !important; }
+    .marker-callouts line { stroke-dasharray: 3, 3; }
+    .marker-callouts text { font-size: 9px !important; fill: #333 !important; }
+
+    @media print {
+      body { margin: 0; font-size: 9pt; }
+      h1 { font-size: 14pt; margin: 0.5cm 1cm 0.5cm 1cm; }
+      button, hr, .print-controls { display: none; }
+      .print-details { display: block; margin: 0 1cm 0.5cm 1cm; }
+      .print-section { font-size: 8pt; margin-bottom: 0.5cm; page-break-inside: avoid; }
+      .print-section table { font-size: 7pt; }
+      .print-section th, .print-section td { padding: 3px; }
+      .color-swatch { width: 8px; height: 8px; }
+      .print-svg-container { border: none; padding: 0; margin: 0 1cm 1cm 1cm; height: auto; min-height: 0; page-break-inside: avoid; overflow: visible; }
+      .print-svg-container svg { width: 100%; height: auto; max-height: none; }
+      .marker-callouts text { font-size: 7pt !important; }
+      @page { size: A4 landscape; margin: 1cm; }
+    }
+
+  </style>
+</head>
+ <body>
+
+  <div class="bar">
+    <b>Carousel Stow — Side View</b>
+    <div class="toolbar">
+      <button class="btn btn--ghost" id="btnPrint">Print Side View</button>
+      <button class="btn btn--ghost" id="btnSequence">Display Loading Sequence</button>
+      <button class="btn btn--ghost" id="btnStowPlan">Generate Stowage Plan</button>
+      <button class="btn btn--ghost" id="btnToggleTheme" title="Toggle Light/Dark Mode">☀️</button>
+    </div>
+  </div>
+
+  <div class="wrap">
+    <div class="container">
+
+      <div class="panel">
+        <h3>Readme / Instructions</h3>
+        <div style="padding: 12px 14px; font-size: 13px; line-height: 1.6;">
+          <p>
+            Welcome to the Carousel Stow Side View tool!
+          </p>
+          <ul>
+            <li>Adjust the <strong>Tank Dimensions</strong> and <strong>Cable Properties</strong> below. The side view visualization will update automatically.</li>
+            <li>Add, remove, or reorder cables in the <strong>Cable stack</strong> section. Remember the list represents the stack from top to bottom (last cable added is highest).</li>
+            <li>Double-click on any cable circle in the visualization to add a <strong>marker</strong> and an optional note. Double-click again to remove it.</li>
+            <li>Use the buttons in the top bar (<strong>Print Side View</strong>, etc.) to generate reports in new windows.</li>
+            <li>Hover over cable circles or end labels (①, ②) for detailed tooltips.</li>
+          </ul>
+          <p>
+            <em>Note: This tool uses a simplified linear placement model.</em>
+          </p>
+        </div>
+      </div>
+
+      <div class="panel">
+        <h3>Tank</h3>
+        <div class="grid tank">
+          <div class="field" style="grid-column: 1 / -1;">
+             <label>Tank Name / Identifier</label>
+             <input id="tank_name" type="text" value="Carousel">
+          </div>
+          <div class="field"><label>Inner Diameter (m)</label><input id="id_m" type="number" step="0.01" value="6"></div>
+          <div class="field"><label>Outer Diameter (m)</label><input id="od_m" type="number" step="0.01" value="30"></div> 
+          <div class="field"><label>Inner Wall Height (m)</label><input id="hi_m" type="number" step="0.01" value="5"></div>
+          <div class="field"><label>Outer Wall Height (m)</label><input id="ho_m" type="number" step="0.01" value="5"></div>
+          <div class="field"><label>Max Capacity (tonnes)</label><input id="cap_t" type="number" step="0.1" value="0" title="0 = no limit"></div>
+        </div>
+      </div>
+
+      <div class="board">
+        <div class="boardHeader" id="headerStats">
+          <span class="stat">Span: <b id="spanRead">–</b></span>
+          <span class="stat">Layers: <b id="layersRead">–</b></span>
+          <span class="stat">Length: <b id="lenRead">–</b></span>
+          <span class="stat">Max height: <b id="heightRead">–</b> <span id="heightOver"></span></span>
+          <span class="stat">Total weight: <b id="weightRead">–</b> <span id="capRead" class="cap">no limit</span></span>
+        </div>
+        <svg id="svg" xmlns="http://www.w3.org/2000/svg" height="600" aria-label="Side view stow">
+          <g id="scene"></g>
+        </svg>
+        <div id="tooltip" class="tooltip" role="tooltip" aria-hidden="true"></div>
+      </div>
+
+      <div class="panel">
+        <h3>
+          <span>Cable stack (top to bottom)</span>
+          <span><button class="btn btn--primary" id="btnAdd">+ Add cable</button></span>
+        </h3>
+        <div id="cables" class="cables"></div>
+      </div>
+
+    </div> 
+  </div> 
+<script>
+(function(){
+  // ---- DOM ----
+  var $ = function(id){ return document.getElementById(id); };
+  var svg = $('svg'), g = $('scene');
+  var spanRead = $('spanRead'), layersRead = $('layersRead'), heightRead = $('heightRead'), overBadge = $('heightOver'), lenRead = $('lenRead');
+  var weightRead = $('weightRead'), capRead = $('capRead');
+  var tooltip = $('tooltip');
+
+  // ---- State ----
+  var lastCtx = null; // {T, xInner_px, pxPerMm, yPx, W, H } // Added W, H for print viewbox
+  var placed = []; // {x, y, r, cableIndex, turnIndex, cableName, cableColor, el}
+
+  function makeCable(name,color,od_mm,pack,length_m,startAt,kgpm){
+    return { name, color, od_mm, pack, length_m, startAt, kgpm: (kgpm||0) };
+  }
+  var state = {
+    cables: [
+      makeCable('Small 120', '#22d3ee', 120, 1.00, 24000, 'core', 2.5),
+      makeCable('Heavy 300', '#f59e0b', 300, 1.00, 20000, 'outer', 9.0)
+    ]
+  };
+
+  // ---- Coordinate Converters ----
+  function mmX_to_px(x_mm){ if(!lastCtx) return 0; return lastCtx.xInner_px + (x_mm - lastCtx.T.id_mm/2) * lastCtx.pxPerMm; }
+  function px_to_mmX(x_px){ if(!lastCtx) return 0; return (x_px - lastCtx.xInner_px)/lastCtx.pxPerMm + lastCtx.T.id_mm/2; }
+  function mmY_to_px(y_mm){ if(!lastCtx) return 0; return lastCtx.yPx(y_mm); }
+  function px_to_mmY(y_px){
+    var padY = 24;
+    var H_svg = svg.getBoundingClientRect().height || +svg.getAttribute('height') || 600;
+    var y_floor = H_svg - padY;
+    if (!lastCtx || !lastCtx.pxPerMm) return 0;
+    return (y_floor - y_px) / lastCtx.pxPerMm;
+  }
+
+  // ---- Tank Data ----
+  function tank(){
+    return {
+      id_m: +$('id_m').value,
+      od_m: +$('od_m').value,
+      hi_m: +$('hi_m').value,
+      ho_m: +$('ho_m').value,
+      id_mm: (+$('id_m').value)*1000,
+  	  od_mm: (+$('od_m').value)*1000,
+  	  hi_mm: (+$('hi_m').value)*1000,
+  	  ho_mm: (+$('ho_m').value)*1000,
+  	  maxTonnes: +$('cap_t').value || 0
+    };
+  }
+
+  // ---- Geometry & Placement Helpers ----
+  var EPS = 1e-6;
+  function supportY(x, R){
+    var y = R;
+    for(var i=0;i<placed.length;i++){
+      var c = placed[i], dx = x - c.x, reach = R + c.r;
+      if(Math.abs(dx) <= reach + EPS){
+        var insideSq = reach*reach - dx*dx;
+        if (insideSq >= 0) {
+            var yc = c.y + Math.sqrt(insideSq);
+            if(yc > y) y = yc;
+        }
+      }
+    }
+    return y;
+  }
+  function collides(x,y,R){
+    for(var i=0;i<placed.length;i++){
+  	  var c = placed[i], dx = x - c.x, dy = y - c.y;
+  	  if(dx*dx + dy*dy < Math.pow(R + c.r - EPS, 2)) return true;
+    }
+    return false;
+  }
+  function placeCircle(R, x0, xmin, xmax, stepX, prevX, dir){
+    var alpha = 0.55;
+    var w     = alpha * Math.max(stepX, EPS);
+    var delta = Math.max(stepX/12, R/10, 0.25);
+    var epsX  = 0.10;
+    x0 = Math.max(xmin, Math.min(x0, xmax));
+    if (dir > 0) x0 = Math.max(x0, (prevX==null ? xmin : prevX + epsX));
+    else         x0 = Math.min(x0, (prevX==null ? xmax : prevX - epsX));
+    var y0 = supportY(x0, R);
+    if (!collides(x0, y0, R)) { return {x:x0, y:y0}; }
+  	var best = null, maxK = Math.ceil((w/delta));
+  	for (var k=1; k<=maxK; k++){
+  	  var probes = [];
+  	  var xL = Math.max(xmin, x0 - k*delta);
+  	  if (dir > 0) xL = Math.max(xL, (prevX==null ? xmin : prevX + epsX));
+  	  else         xL = Math.min(xL, (prevX==null ? xmax : prevX - epsX));
+  	  if (Math.abs(xL - x0) <= w + EPS){
+  	    var yL = supportY(xL, R); if(!collides(xL,yL,R)) probes.push({x:xL,y:yL,side:'L'});
+  	  }
+  	  var xR = Math.min(xmax, x0 + k*delta);
+  	  if (dir > 0) xR = Math.max(xR, (prevX==null ? xmin : prevX + epsX));
+  	  else  	    xR = Math.min(xR, (prevX==null ? xmax : prevX - epsX));
+  	  if (Math.abs(xR - x0) <= w + EPS){
+  	    var yR = supportY(xR, R); if(!collides(xR,yR,R)) probes.push({x:xR,y:yR,side:'R'});
+  	  }
+  	  for (var p=0;p<probes.length;p++){
+  	    var cand = probes[p];
+  	    if (!best || (cand.y < best.y - EPS) ||
+  	        (Math.abs(cand.y - best.y) <= EPS && Math.abs(cand.x - x0) < Math.abs(best.x - x0)) ||
+  	        (Math.abs(cand.y - best.y) <= EPS && Math.abs(Math.abs(cand.x - x0) - Math.abs(best.x - x0)) <= EPS && cand.side==='L')){
+  	      best = cand;
+  	    }
+  	  }
+  	  if (best) break;
+  	}
+  	if (!best) best = {x:x0, y:y0};
+  	return best;
+  }
+  function turnLength_m(id_mm, od_mm){
+    if (od_mm <= id_mm) return 0;
+    var meanR=(id_mm+od_mm)/4;
+    return 2*Math.PI*meanR/1000;
+  }
+
+  // ---- SVG Drawing Helpers ----
+  function line(x1,y1,x2,y2,stroke,w){ var l=document.createElementNS('http://www.w3.org/2000/svg','line'); l.setAttribute('x1',x1); l.setAttribute('y1',y1); l.setAttribute('x2',x2); l.setAttribute('y2',y2); l.setAttribute('stroke',stroke); l.setAttribute('stroke-width',w); l.setAttribute('class','nss'); return l; }
+  function rect(x,y,w,h,fill){ var r=document.createElementNS('http://www.w3.org/2000/svg','rect'); r.setAttribute('x',x); r.setAttribute('y',y); r.setAttribute('width', Math.max(0, w)); r.setAttribute('height', Math.max(0, h)); r.setAttribute('fill',fill); r.setAttribute('rx',3); return r; }
+  function label(x,y,text,rot){ var t=document.createElementNS('http://www.w3.org/2000/svg','text'); t.setAttribute('x',x); t.setAttribute('y',y); t.setAttribute('text-anchor','middle'); t.setAttribute('fill','#e5e7eb'); t.setAttribute('font-size','14'); t.setAttribute('class','nss'); if(rot){ t.setAttribute('transform','rotate('+rot+' '+x+' '+y+')'); } t.textContent=text; return t; }
+  function drawCircle(cx_mm, cy_mm, r_mm, color, T, xInner_px, pxPerMm, yPx, over, meta){
+    var cx = xInner_px + (cx_mm - T.id_mm/2)*pxPerMm;
+    var cy = yPx(cy_mm);
+    var r  = Math.max(0.1, r_mm * pxPerMm);
+    var c = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    c.id = `cable_${meta.cableIndex}_turn_${meta.turn}`; // Add unique ID
+    c.setAttribute('cx', cx); c.setAttribute('cy', cy); c.setAttribute('r',  r);
+    c.setAttribute('fill', color); c.setAttribute('stroke', '#0b0b0b'); c.setAttribute('stroke-width', '1.1');
+  	c.setAttribute('opacity', over ? '0.35' : '1');
+  	c.dataset.name     = meta.name; c.dataset.odmm     = meta.od_mm; c.dataset.pack     = meta.pack;
+  	c.dataset.heightmm = (cy_mm + r_mm).toFixed(2); c.dataset.clearmm  = (meta.clear_mm || 0).toFixed(2);
+  	c.dataset.over     = over ? '1' : '0'; c.dataset.turn     = meta.turn;
+    c.dataset.cableIndex = meta.cableIndex; // Store cable index directly
+  	g.appendChild(c); return c;
+  }
+  function drawEndLabel(n, cx_mm, cy_mm, T, xInner_px, pxPerMm, yPx, cableName){
+  	var cx = xInner_px + (cx_mm - T.id_mm/2)*pxPerMm; var cy = yPx(cy_mm);
+  	var grp = document.createElementNS('http://www.w3.org/2000/svg','g');
+  	grp.setAttribute('data-end', n); grp.setAttribute('data-name', cableName); grp.setAttribute('pointer-events','all');
+  	var r = 9;
+  	var bg = document.createElementNS('http://www.w3.org/2000/svg','circle');
+  	bg.setAttribute('cx', cx); bg.setAttribute('cy', cy); bg.setAttribute('r', r);
+  	bg.setAttribute('fill', 'var(--panel-2)'); bg.setAttribute('stroke', 'var(--muted)'); bg.setAttribute('stroke-width', '1');
+  	var tx = document.createElementNS('http://www.w3.org/2000/svg','text');
+  	tx.setAttribute('x', cx); tx.setAttribute('y', cy + 3.5); tx.setAttribute('text-anchor','middle');
+  	tx.setAttribute('fill','var(--muted)'); tx.setAttribute('font-size','10'); tx.textContent = n;
+  	grp.appendChild(bg); grp.appendChild(tx); g.appendChild(grp);
+  }
+
+  // ---- Viewport Calculation ----
+  function getViewport() {
+    const box = svg.getBoundingClientRect();
+    const W = Math.max(320, Math.floor(box.width  || svg.clientWidth  || svg.parentElement.clientWidth  || 800));
+    const H = Math.max(300, Math.floor(box.height || svg.clientHeight || +svg.getAttribute('height') || 600));
+    const padX = 24, padY = 24, wallTh = 56;
+    return { W, H, padX, padY, wallTh,
+  	    innerX: padX + wallTh,
+  	    outerX: (xSpanPx)=> padX + wallTh + xSpanPx,
+  	    yPxFromMm: (pxPerMm, mm)=> (H - padY) - (mm * pxPerMm) };
+  }
+
+  // ---- UI: Cable Cards ----
+ function renderCables(){
+  const host = $('cables');
+  host.innerHTML = '';
+
+  // render cards
+  state.cables.forEach((c, i) => {
+    const card = document.createElement('div');
+    card.className = 'card';
+    card.innerHTML = `
+      <div class="cardHead">
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="chip">
+            <span class="chipSw" style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${c.color}"></span>
+            <span class="chipText">${c.name}</span>
+          </span>
+        </div>
+        <div style="display:flex;gap:6px">
+          <button class="btn" data-act="up" data-i="${i}" type="button">↑</button>
+          <button class="btn" data-act="down" data-i="${i}" type="button">↓</button>
+          <button class="btn btn--danger" data-act="del" data-i="${i}" type="button">✕</button>
+        </div>
+      </div>
+
+      <div class="row">
+        <div class="field"><label>Name</label><input data-k="name" data-i="${i}" value="${c.name}"></div>
+        <div class="field"><label>OD (mm)</label><input type="number" step="1" data-k="od_mm" data-i="${i}" value="${c.od_mm}"></div>
+        <div class="field"><label>Packing ×</label><input type="number" step="0.005" min="1.0" max="1.2" data-k="pack" data-i="${i}" value="${c.pack.toFixed(3)}"></div>
+        <div class="field"><label>Length (m)</label><input type="number" step="1" data-k="length_m" data-i="${i}" value="${c.length_m}"></div>
+        <div class="field"><label>Start at</label><select data-k="startAt" data-i="${i}">
+          <option ${c.startAt==='core'?'selected':''} value="core">Centre core</option>
+          <option ${c.startAt==='outer'?'selected':''} value="outer">Outer wall</option>
+          <option ${c.startAt==='end'?'selected':''} value="end">End of existing</option>
+          <option ${c.startAt==='user'?'selected':''} value="user">User defined (placeholder)</option>
+        </select></div>
+        <div class="field"><label>kg per meter</label><input type="number" step="0.1" min="0" data-k="kgpm" data-i="${i}" value="${c.kgpm||0}"></div>
+        <div class="field"><label>Colour</label><input type="color" data-k="color" data-i="${i}" value="${c.color}"></div>
+      </div>
+      <div class="summary" id="sum_${i}">–</div>
+    `;
+    host.appendChild(card);
+  });
+
+  // helper: update chip on a single card
+  function updateChip(i){
+    const card = host.querySelector(`.btn[data-i="${i}"]`)?.closest('.card')
+               || host.querySelector(`input[data-i="${i}"]`)?.closest('.card');
+    if(!card) return;
+    const text = card.querySelector('.chipText');
+    const sw   = card.querySelector('.chipSw');
+    const C    = state.cables[i];
+    if(text) text.textContent = C.name || 'Cable';
+    if(sw)   sw.style.background = C.color || '#60a5fa';
+  }
+
+  // wire inputs (single handler each)
+  host.querySelectorAll('input,select').forEach(inp=>{
+    const handler = ()=>{
+      const i = +inp.dataset.i;
+      const k = inp.dataset.k;
+      const v = inp.value;
+      const C = state.cables[i];
+      if (!C) return;
+
+      if (k === 'name'){ C.name = v; updateChip(i); }
+      else if (k === 'color'){ C.color = v; updateChip(i); }
+      else if (k === 'od_mm'){ C.od_mm = Math.max(0, +v||0); inp.value = C.od_mm; }
+      else if (k === 'pack'){ let p = +v||1.0; p = Math.max(1.0, p); C.pack = p; inp.value = p.toFixed(3); }
+      else if (k === 'length_m'){ C.length_m = Math.max(0, +v||0); inp.value = C.length_m; }
+      else if (k === 'startAt'){ C.startAt = v; }
+      else if (k === 'kgpm'){ C.kgpm = Math.max(0, +v||0); inp.value = C.kgpm; }
+
+      draw();
+    };
+
+    // use input for live updates; change for selects if you prefer
+    if (inp.tagName === 'SELECT') inp.onchange = handler;
+    else inp.oninput = handler;
+  });
+
+  // delegate buttons (attach ONCE)
+  if (!host._wired) {
+    host.addEventListener('click', (e)=>{
+      const btn = e.target.closest('button[data-act]');
+      if (!btn || !host.contains(btn)) return;
+
+      const act = btn.dataset.act;
+      const i   = +btn.dataset.i;
+      if (Number.isNaN(i) || i < 0 || i >= state.cables.length) return;
+
+      if (act === 'del') {
+        if (!confirm(`Delete cable "${state.cables[i].name}"?`)) return;
+        state.cables.splice(i, 1);
+        renderCables();
+        draw();
+        return;
+      }
+
+      if (act === 'up' && i > 0) {
+        [state.cables[i-1], state.cables[i]] = [state.cables[i], state.cables[i-1]];
+        renderCables();
+        draw();
+        return;
+      }
+
+      if (act === 'down' && i < state.cables.length - 1) {
+        [state.cables[i], state.cables[i+1]] = [state.cables[i+1], state.cables[i]];
+        renderCables();
+        draw();
+        return;
+      }
+    });
+    host._wired = true; // guard so we don't add multiple listeners on re-render
+  }
+}
+
+
+  function updateChip(i){
+  // Find the card containing any control with data-i="i"
+  const card = document.querySelector(`.card .btn[data-i="${i}"]`)?.closest('.card')
+            || document.querySelector(`.card input[data-i="${i}"]`)?.closest('.card');
+  if(!card) return;
+
+  const text = card.querySelector('.chipText');
+  const sw   = card.querySelector('.chipSw');
+  const C = state.cables[i];
+
+  if(text) text.textContent = C.name || 'Cable';
+  if(sw)   sw.style.background = C.color || '#60a5fa';
+}
+
+
+  // ---- Main Draw Function ----
+  function draw(){
+    try {
+        const T = tank();
+        // Basic validation
+        if (T.od_mm <= T.id_mm || T.hi_mm < 0 || T.ho_mm < 0 || T.id_mm < 0 || T.od_mm < 0) { /* ... Validation ... */ return; }
+
+        const spanXmm = (T.od_mm - T.id_mm)/2;
+        const Hwall   = Math.max(EPS, T.hi_mm, T.ho_mm);
+        const VP = getViewport();
+        if (!VP || VP.W === undefined) { throw new Error("getViewport failed"); }
+
+      	const availWpx = Math.max(50, VP.W - 2*VP.padX - 2*VP.wallTh);
+      	const pxPerMmW = (spanXmm > EPS) ? availWpx / spanXmm : 1;
+      	const pxPerMm = Math.max(0.001, pxPerMmW);
+        if (!isFinite(pxPerMm) || pxPerMm <= 0) { throw new Error(`Invalid pxPerMm: ${pxPerMm}`); }
+
+      	g.innerHTML = '';
+      	const xInner_px = VP.innerX;
+      	const xOuter_px = VP.outerX(spanXmm * pxPerMm);
+      	const yPx       = mm => VP.yPxFromMm(pxPerMm, mm);
+      	lastCtx = { T, xInner_px, pxPerMm, yPx, W: VP.W, H: VP.H }; // Store W, H
+
+      	// --- Wall drawing ---
+        /* ... Wall drawing code ... */
+        const y_floor = yPx(0);
+        const y_top_inner = Math.max(VP.padY, yPx(T.hi_mm));
+        const h_px_inner = Math.max(0, y_floor - y_top_inner);
+        g.appendChild(rect(xInner_px - VP.wallTh, y_top_inner, VP.wallTh, h_px_inner, 'var(--inner)'));
+        const y_top_outer = Math.max(VP.padY, yPx(T.ho_mm));
+        const h_px_outer = Math.max(0, y_floor - y_top_outer);
+        g.appendChild(rect(xOuter_px, y_top_outer, VP.wallTh, h_px_outer, 'var(--outer)'));
+        g.appendChild(line(xInner_px, y_floor, xOuter_px, y_floor, 'var(--floor)', 2));
+        g.appendChild(label(xInner_px - VP.wallTh/2, (y_top_inner + y_floor) / 2, 'Inner Wall', -90));
+        g.appendChild(label(xOuter_px + VP.wallTh/2, (y_top_outer + y_floor) / 2, 'Outer Wall', 90));
+
+      	// --- Place Turns ---
+      	placed = []; // Reset placed array
+      	let turns = 0, maxTop = 0;
+      	let totalLen_m = 0, totalWeight_t = 0;
+      	const TL = turnLength_m(T.id_mm, T.od_mm);
+        if (TL <= 0 && state.cables.some(c => c.length_m > 0)) { /* ... Error handling ... */ return; }
+      	let carryX = null, carryDir = +1;
+        let cableLayers = []; // For overall stats
+        let overallLayerIndex = 1; // Track visual layers across all cables
+        let lastLayerMaxY = 0; // Track the rough Y coord of the last layer added
+
+      	state.cables.forEach(function(C, iIdx){
+          const r = C.od_mm/2;
+          if (r <= 0) { /* ... Skip cable ... */ return; }
+      	  const stepX = Math.max(EPS, 2*r*C.pack);
+      	  const xmin = T.id_mm/2 + r;
+      	  const xmax = T.od_mm/2 - r;
+          if (xmax <= xmin) { /* ... Skip cable ... */ return; }
+      	  const acrossCap = Math.max(0, Math.floor((xmax - xmin)/stepX) + 1);
+          let startDir = +1, startX0 = xmin;
+      	  if (C.startAt === 'outer'){ startDir = -1; startX0 = xmax; }
+      	  else if (C.startAt === 'end' && carryX != null){ startDir = carryDir; startX0 = Math.max(xmin, Math.min(xmax, carryX + carryDir*stepX)); }
+          let turnsLeft = (TL > 0) ? Math.max(0, Math.ceil((C.length_m || 0) / TL)) : 0;
+      	  let firstPlaced = null, lastPlaced = null;
+      	  let cableTurns = 0, cableLen_m = 0, turnIndexWithinCable = 0;
+      	  let guard=0, firstSweep=true;
+          // --- Layer calculation specific to this cable ---
+          let currentLayerIndexForCable = 1;
+          let lastTurnYForCable = -Infinity; // Y coord of the previously placed turn IN THIS CABLE
+          const yJumpThresholdForCable = r * 0.8; // Use radius for threshold
+
+      	  while (turnsLeft > 0 && guard < 50000){
+            let x = firstSweep ? startX0 : (startDir > 0 ? xmin : xmax);
+      	    let prevX = null, placedThisSweep = 0;
+            const sweep = dir => {
+              while (turnsLeft > 0 && (dir>0 ? x <= xmax + EPS : x >= xmin - EPS)){
+                const pos = placeCircle(r, x, xmin, xmax, stepX, prevX, dir);
+                if (pos === null || !isFinite(pos.x) || !isFinite(pos.y)) { /* ... Error handling ... */ break; }
+                const cx  = pos.x, cy  = pos.y;
+                if (cy < r - EPS) { /* ... Error handling ... */ continue; }
+
+                  // --- Determine Layer Index ---
+                  if (!firstSweep && Math.abs(cy - lastTurnYForCable) >= yJumpThresholdForCable) {
+                      currentLayerIndexForCable++; // Increment layer index for this cable
+                  }
+                  lastTurnYForCable = cy; // Update last Y for next comparison
+
+                const t   = (spanXmm > EPS) ? Math.min(1, Math.max(0, (cx - T.id_mm/2)/(spanXmm))) : 0.5;
+                const top_mm = T.hi_mm + (T.ho_mm - T.hi_mm) * t;
+                const over   = (cy + r) > top_mm + EPS;
+                const clear_mm = top_mm - (cy + r);
+                if (!firstPlaced) firstPlaced = pos; lastPlaced = pos;
+                const el = drawCircle(cx, cy, r, C.color, T, xInner_px, pxPerMm, yPx, over, {
+                      name:C.name, od_mm:C.od_mm, pack:C.pack, clear_mm, turn:(++turnIndexWithinCable), cableIndex: iIdx
+                  });
+                  // Add layer index to dataset
+                  el.dataset.layerIndex = currentLayerIndexForCable;
+
+                placed.push({ x:cx, y:cy, r, cableIndex:iIdx, cableName: C.name, cableColor: C.color, turnIndex:turnIndexWithinCable, layerIndex: currentLayerIndexForCable, el }); // Store layer index
+                maxTop = Math.max(maxTop, cy + r);
+                turns++; cableTurns++; cableLen_m += TL; totalLen_m += TL; totalWeight_t += (C.kgpm || 0) * TL / 1000.0; placedThisSweep++; turnsLeft--;
+                prevX = pos.x; x += dir * stepX;
+              }
+            }; // End sweep function
+            sweep(startDir);
+            if (!placedThisSweep && turnsLeft > 0) { /* ... Error handling ... */ break; }
+            firstSweep = false; guard++;
+            if (guard >= 50000) { /* ... Error handling ... */ break; }
+      	  } // End while (turnsLeft)
+
+         // Update carry-over position for next cable's 'end' placement
+      	  if (lastPlaced) {
+      		  carryX = lastPlaced.x;
+      		  carryDir = startDir; // The direction of the *last* sweep
+      	  } else if (C.startAt === 'end' && carryX != null) {
+      		  // Cable had 0 length but was set to 'end', keep previous carryX
+      	  } else {
+      		  carryX = null; // Reset if not 'end' or nothing placed
+      	  }
+
+      	  // --- THIS IS THE FIX ---
+      	  // Draw end labels if any turns were placed
+      	  if (firstPlaced) drawEndLabel('1', firstPlaced.x, firstPlaced.y, T, xInner_px, pxPerMm, yPx, C.name);
+      	  if (lastPlaced)  drawEndLabel('2', lastPlaced.x, lastPlaced.y, T, xInner_px, pxPerMm, yPx, C.name);
+      	  // --- END OF FIX ---
+
+      	  // Cable-specific weight calculation for summary card
+      	  const cableWeight_t = (C.kgpm || 0) * cableLen_m / 1000.0;
+
+      	 // Annotate Tooltip Data with per-turn lengths (radius-based)
+const currentCablePlaced = placed
+  .filter(p => p.cableIndex === iIdx)
+  .sort((a,b) => a.turnIndex - b.turnIndex);
+
+const perTurnLen_m = currentCablePlaced.map(q => 2 * Math.PI * (q.x) / 1000); // q.x is radius in mm
+const prefix = [0];
+for (let k = 0; k < perTurnLen_m.length; k++) {
+  prefix[k + 1] = prefix[k] + perTurnLen_m[k];
+}
+const totalLen_m_forCable = prefix[prefix.length - 1];
+
+currentCablePlaced.forEach((p, idxZero) => {
+  const turnLen = perTurnLen_m[idxZero];                 // this turn’s length (m)
+  const lenFrom1 = prefix[idxZero + 1];                  // sum up to and incl this turn
+  const lenFrom2 = totalLen_m_forCable - prefix[idxZero]; // sum from this turn to end
+
+  if (p.el) {
+    // Keep existing “turn counts” if useful
+    p.el.dataset.turn1 = String(idxZero + 1);
+    p.el.dataset.turn2 = String(perTurnLen_m.length - idxZero);
+
+    // Per-turn + cumulative lengths (rounded later in tooltip)
+    p.el.dataset.turnlen_m = String(turnLen);
+    p.el.dataset.len1_m = String(lenFrom1);
+    p.el.dataset.len2_m = String(lenFrom2);
+
+    p.el.dataset.cableIndex = String(iIdx);
+  }
+});
+          
+          const layers = (acrossCap > 0 && cableTurns > 0) ? (cableTurns / acrossCap) : 0;
+          cableLayers.push({ name: C.name, color: C.color, count: layers });
+          const sumEl = $('sum_'+iIdx);
+      	  if (sumEl){
+  const placedForCable = placed.filter(p => p.cableIndex === iIdx).length;
+  const lenPlaced_m = (placedForCable > 0 && TL > 0) ? placedForCable * TL : 0;
+  const wtPlaced_t  = (C.kgpm || 0) * lenPlaced_m / 1000.0;
+
+  if (lenPlaced_m > 0){
+    sumEl.textContent = `Placed: ${lenPlaced_m.toFixed(0)} m • ${wtPlaced_t.toFixed(2)} t`;
+  } else {
+    // Nothing placed yet—show target and kg/m so it’s still informative
+    const tgt = Math.max(0, +C.length_m || 0);
+    const estWt_t = (C.kgpm || 0) * tgt / 1000.0;
+    sumEl.textContent = `Target: ${tgt.toFixed(0)} m • ${estWt_t.toFixed(2)} t (kg/m ${(+C.kgpm||0).toFixed(1)})`;
+  }
+}
+
+      	}); // End forEach cable
+
+      	// --- Update Stats ---
+            // Recalculate span from Tank object
+            const spanXmm_stat = (T.od_mm - T.id_mm) / 2;
+        	spanRead.textContent = `${(spanXmm_stat / 1000).toFixed(2)} m`;
+        	lenRead.textContent = `${Math.round(totalLen_m).toLocaleString()} m`;
+        	heightRead.textContent = `${(maxTop / 1000).toFixed(3)} m`;
+
+        	// Layers Stat Logic (summing fractional layers)
+        	const totalLayers = cableLayers.reduce((sum, l) => sum + l.count, 0);
+        	layersRead.textContent = `${totalLayers.toFixed(1)}`;
+
+        	// Height Over Badge
+        	let anyOver = false;
+            // Need to check placed turns against the wall height
+        	placed.forEach(p => {
+                const t = (spanXmm_stat > EPS) ? Math.min(1, Math.max(0, (p.x - T.id_mm/2) / (spanXmm_stat))) : 0.5;
+        		const top_mm = T.hi_mm + (T.ho_mm - T.hi_mm) * t;
+        		if ((p.y + p.r) > top_mm + EPS) anyOver = true;
+        	});
+        	if (anyOver) {
+        		overBadge.innerHTML = `<span class="heightBadge">OVER</span>`;
+        	} else {
+        		overBadge.innerHTML = '';
+        	}
+
+        	// Weight/Capacity
+        	weightRead.textContent = `${totalWeight_t.toFixed(2)} t`;
+        	if (T.maxTonnes > 0) {
+        		const perc = (totalWeight_t / T.maxTonnes) * 100;
+        		capRead.textContent = `(${perc.toFixed(0)}%)`;
+        		if (perc > 100) capRead.className = 'cap bad';
+        		else if (perc > 90) capRead.className = 'cap warn';
+        		else capRead.className = 'cap';
+        	} else {
+        		capRead.textContent = 'no limit';
+        		capRead.className = 'cap';
+        	}
+
+    } catch (error) { /* ... error handling ... */ }
+  } // End of draw function
+
+  // ---- Tooltip ----
+  (function(){ // Full tooltip code
+    const TIP_DX = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tipdx')) || 8;
+    const TIP_DY = parseInt(getComputedStyle(document.documentElement).getPropertyValue('--tipdy')) || 8;
+    let mouseX = 0, mouseY = 0;
+    svg.addEventListener('mousemove', function(ev){
+      mouseX = ev.clientX; mouseY = ev.clientY;
+      let t = ev.target;
+      let isCircle = (t && t.tagName === 'circle' && t.dataset && t.dataset.name);
+      let endNode  = t && (t.closest && t.closest('[data-end]'));
+      if (!isCircle && !endNode){ tooltip.style.display = 'none'; tooltip.setAttribute('aria-hidden','true'); return; }
+  	 if (isCircle){
+  	    const h= +t.dataset.heightmm, clr = +t.dataset.clearmm, over= t.dataset.over==='1';
+  	    const turn1= +t.dataset.turn1 || +t.dataset.turn || 0, turn2= +t.dataset.turn2 || 0;
+  	    const len1= +t.dataset.len1_m || 0, len2= +t.dataset.len2_m || 0, tlen= +t.dataset.turnlen_m || 0;
+  	    const note= t.dataset.note || '';
+        const layerIdx = t.dataset.layerIndex || '?'; // Get layer index
+        const safeName = (t.dataset.name || '').replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+  	    tooltip.innerHTML = `
+          <div><b>${safeName}</b> (Layer ${layerIdx})</div>
+          <div>OD: ${t.dataset.odmm} mm • pack × ${t.dataset.pack}</div>
+          <div>Local height: <b>${(h/1000).toFixed(3)} m</b> (${h.toFixed(0)} mm)</div>
+          ${over ? `<div>Over wall by: <b style="color:#fecaca">${(-clr).toFixed(0)} mm</b></div>` : `<div>Clearance to top: <b>${clr.toFixed(0)} mm</b></div>`}
+          <hr />
+          <div>Turns from (1): <b>${turn1}</b></div>
+          <div>Turns from (2): <b>${turn2}</b></div>
+          <div>Total Length (1): <b>${len1.toFixed(0)} m</b></div>
+          <div>Total Length (2): <b>${len2.toFixed(0)} m</b></div>
+          <div>Turn length: <b>${tlen.toFixed(2)} m</b></div>
+          ${note ? `<hr /><div><b>Marker note:</b> ${note.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</div>` : ''}
+        `;
+  	  } else {
+  	    const n = endNode.getAttribute('data-end') === '1' ? '1st end' : '2nd end';
+  	    const nm= (endNode.getAttribute('data-name') || '').replace(/</g, "&lt;").replace(/>/g, "&gt;"); // Escape name
+  	    tooltip.innerHTML = `<div><b>${n}</b></div><div>${nm}</div>`;
+  	  }
+  	  tooltip.style.display = 'block'; tooltip.setAttribute('aria-hidden','false');
+  	  const boardRect = svg.getBoundingClientRect(); const vpW = boardRect.width, vpH = boardRect.height;
+  	  const rect = tooltip.getBoundingClientRect();
+  	  let left = (mouseX - boardRect.left) + TIP_DX, top  = (mouseY - boardRect.top)  + TIP_DY;
+  	  if (left + rect.width > vpW - 8)  left = Math.max(8, left - rect.width - 2*TIP_DX);
+  	  if (top  + rect.height > vpH - 8) top  = Math.max(8, top - rect.height - 2*TIP_DY);
+  	  tooltip.style.left = left + 'px'; tooltip.style.top  = top  + 'px';
+  	});
+  })();
+
+  // ---- Marker Toggle ----
+  svg.addEventListener('dblclick', function(ev){
+    const t = ev.target;
+    if (!(t && t.tagName === 'circle' && t.dataset && t.dataset.name)) return;
+    const already = t.dataset.marker === '1';
+  	if (already){
+  	  t.dataset.marker = '0'; t.dataset.note = ''; t.classList.remove('circle--marked');
+  	  if (t._flagEl && t._flagEl.parentNode) t._flagEl.parentNode.removeChild(t._flagEl);
+  	  t._flagEl = null;
+  	  t.setAttribute('stroke', '#0b0b0b'); t.setAttribute('stroke-width', '1.1');
+  	  t.setAttribute('opacity', t.dataset.over==='1' ? '0.35' : '1');
+  	} else {
+  	  const txt = (window.prompt('Add marker note:','') || '').trim();
+  	  t.dataset.marker = '1'; if (txt) t.dataset.note = txt;
+  	  t.classList.add('circle--marked');
+  	  const cx = +t.getAttribute('cx'), cy = +t.getAttribute('cy'), r  = +t.getAttribute('r');
+      // Flag Drawing
+      const flagGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g'); flagGroup.setAttribute('class', 'marker-flag');
+      const pole = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      const poleX = cx, poleY1 = cy, poleY2 = poleY1 - 25;
+      pole.setAttribute('x1', poleX); pole.setAttribute('y1', poleY1); pole.setAttribute('x2', poleX); pole.setAttribute('y2', poleY2);
+      pole.setAttribute('stroke', '#facc15'); pole.setAttribute('stroke-width', '2'); flagGroup.appendChild(pole);
+      const flagWidth = 20, flagHeight = 15, flagX = poleX, flagY = poleY2 - flagHeight;
+      const flagRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+      flagRect.setAttribute('x', flagX); flagRect.setAttribute('y', flagY); flagRect.setAttribute('width', flagWidth); flagRect.setAttribute('height', flagHeight);
+      flagRect.setAttribute('fill', '#facc15'); flagRect.setAttribute('stroke', '#1f2937'); flagRect.setAttribute('stroke-width', '1'); flagRect.setAttribute('rx', '2'); flagGroup.appendChild(flagRect);
+      const flagText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      flagText.setAttribute('x', flagX + flagWidth / 2); flagText.setAttribute('y', flagY + flagHeight / 2 + 4); flagText.setAttribute('text-anchor', 'middle'); flagText.setAttribute('fill', '#1f2937');
+      flagText.setAttribute('font-size', '10'); flagText.setAttribute('font-weight', 'bold'); flagText.textContent = '❗'; flagGroup.appendChild(flagText);
+  	  g.appendChild(flagGroup); t._flagEl = flagGroup;
+  	}
+  });
+
+  // ---- New Window/Report Generators ----
+// Helper to open a new window and write content
+function openReportWindow(title, contentHTML) { // Ensure only title and contentHTML are parameters
+    const reportWin = window.open('', '_blank', 'width=1100,height=800,scrollbars=yes,resizable=yes');
+    if (!reportWin) {
+        alert('Popup blocked! Please allow popups for this site to generate reports.');
+        return null;
+    }
+    const safeTitle = title.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+
+    // Add basic error check for contentHTML
+    if (typeof contentHTML !== 'string') {
+        console.error("openReportWindow received invalid contentHTML:", contentHTML);
+        contentHTML = "<p>Error: Report content could not be generated.</p>";
+    }
+
+    reportWin.document.write(`
+        <!DOCTYPE html>
+        <html lang="en" style="height: 100%;">
+        <head>
+            <meta charset="utf-8" />
+            <title>${safeTitle}</title>
+            <style>
+                /* --- Styles Copied from Previous Correct Version --- */
+                body { font-family: system-ui, sans-serif; margin: 0; background-color: #f9fafb; color: #1f2937; line-height: 1.4; font-size: 10pt; }
+                .report-header { background-color: #ffffff; border-bottom: 1px solid #e5e7eb; padding: 12px 1.5cm; margin-bottom: 1cm; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+                h1, h2, h3, h4 { margin: 0.5em 0 0.5em 0; } h1 { font-size: 18pt; margin: 0; color: #1f2937; margin-bottom: 0.2em;} h2 { font-size: 14pt; } h3 { font-size: 11pt; } h4 { font-size: 10pt; }
+                .report-header .print-details p { margin: 0 0 5px 0; font-size: 9pt; color: #6b7280; }
+                .report-content { display: flex; flex-wrap: wrap; gap: 1.5cm; padding: 0 1.5cm 1cm 1.5cm; align-items: flex-start; }
+                .main-column { flex: 3 1 600px; min-width: 0; }
+                .sidebar-column { flex: 1 1 300px; min-width: 280px; }
+                .print-section { margin-bottom: 1cm; page-break-inside: avoid; background-color: #ffffff; border: 1px solid #e5e7eb; border-radius: 6px; padding: 12px; box-shadow: 0 1px 2px rgba(0,0,0,0.04); }
+                .print-section h3 { margin-top: 0; margin-bottom: 10px; color: #4b5563; border-bottom: 1px solid #eee; padding-bottom: 5px; font-size: 11pt;}
+                .print-section p { margin-top: 0; margin-bottom: 6px; font-size: 9pt; }
+                table { width: 100%; border-collapse: collapse; margin-top: 8px; font-size: 8.5pt; background-color: #ffffff; }
+                th, td { border: 1px solid #e5e7eb; padding: 6px 10px; text-align: left; }
+                th { background-color: #f3f4f6; font-weight: 600; color: #374151; }
+                tr:nth-child(even) { background-color: #f9fafb; }
+                .color-swatch { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 5px; vertical-align: middle; border: 1px solid #d1d5db; print-color-adjust: exact; -webkit-print-color-adjust: exact;}
+                .print-svg-container { width: 100%; height: auto; max-height: none; overflow: hidden; border: 1px solid #d1d5db; border-radius: 6px; background-color: #ffffff; }
+                .print-svg-container svg { display: block; width: 100%; height: auto; margin: 0 auto; }
+                .print-svg-container .nss { vector-effect: non-scaling-stroke !important; }
+
+                /* SVG Print Styles */
+                .print-mode rect[fill*="var(--inner)"], .print-mode rect[fill*="var(--outer)"] { fill: #d1d5db !important; }
+                .print-mode line[stroke*="var(--floor)"] { stroke: #6b7280 !important; stroke-width: 1.5px !important; }
+                .print-mode text { fill: #374151 !important; font-size: 10px !important; }
+                .print-mode .marker-flag { display: none !important; }
+                .print-mode-highlight-circle { stroke: #dc2626 !important; stroke-width: 2px !important; fill: none !important; }
+                .print-mode-marker-number { font-size: 14px !important; font-weight: bold !important; fill: #fff !important; stroke: #000 !important; stroke-width: 0.5px !important; paint-order: stroke; }
+
+                .print-controls { text-align: center; margin: 1cm 0; padding-top: 1cm; border-top: 1px solid #e5e7eb;}
+                button { padding: 10px 20px; margin: 0 10px; font-size: 10pt; cursor: pointer; border: 1px solid #ccc; background-color: #f0f0f0; border-radius: 5px; } button:hover { background-color: #e0e0e0; }
+
+                @media print { /* Print Overrides */
+                    body { background-color: #fff; color: #000; margin: 0; font-size: 8pt; padding: 0; }
+                    .report-header { background-color: #fff; border-bottom: none; box-shadow: none; margin-bottom: 0.5cm; padding: 0.5cm 1cm; }
+                    h1 { font-size: 14pt; } h3 { font-size: 9pt; }
+                    button, .print-controls { display: none; }
+                    .report-content { display: block; padding: 0 1cm; gap: 0; }
+                    .main-column, .sidebar-column { flex: none; width: 100%; min-width: auto; }
+                    .print-section { margin-bottom: 0.5cm; page-break-inside: avoid; background-color: #fff; border: 1px solid #eee; box-shadow: none; padding: 8px; }
+                    table { font-size: 7pt; } th, td { padding: 4px 6px; border-color: #ddd; } th { background-color: #f0f0f0; } tr:nth-child(even) { background-color: #f8f8f8; }
+                    .color-swatch { width: 8px; height: 8px; }
+                    .print-svg-container { border: none; padding: 0; margin-top: 8px; height: auto; min-height: 0; page-break-inside: avoid; overflow: visible; }
+                    .print-svg-container svg { width: 100%; height: auto; max-height: none; }
+                    .print-mode-marker-number { font-size: 10px !important; stroke-width: 0.3px !important; }
+                    .print-mode text { font-size: 7px !important; }
+                    @page { size: A4 landscape; margin: 1cm; }
+                }
+            </style>
+        </head>
+        <body>
+            <div class="report-header">
+                <h1>${safeTitle}</h1>
+                <div class="print-details">
+                    <p><strong>Tank Name:</strong> ${ ($('tank_name') && $('tank_name').value.trim()) || 'Carousel' }</p>
+                    <p><strong>Generation Date:</strong> ${new Date().toLocaleString()}</p>
+                </div>
+            </div>
+            ${contentHTML}
+            <div class="print-controls">
+                <hr>
+                <button onclick="window.print()">Print</button>
+                <button onclick="window.close()">Close</button>
+            </div>
+            <script>try { document.querySelectorAll('.print-svg-container .nss').forEach(el => { if(el && el.style) { el.style.vectorEffect = 'non-scaling-stroke'; } }); } catch(e) { console.error('Error applying nss style via JS:', e); }<\/script>
+        </body>
+        </html>
+    `);
+    reportWin.document.close();
+    return reportWin;
+}
+
+  // ---- Button Handlers ----
+$('btnPrint').onclick = function(){
+    try {
+        // --- Ensure data is current ---
+        const T = tank();
+        // Run draw() only if essential data seems missing
+        if (!lastCtx || (placed.length === 0 && state.cables.length > 0)) {
+            console.warn("Print Side View: 'placed' array is empty or context missing. Running draw() to refresh.");
+            draw();
+            if (placed.length === 0 && state.cables.length > 0) {
+                 throw new Error("Cable placement data missing even after redraw.");
+            }
+        }
+        // Recalculate TL after potential draw
+        const TL_print = turnLength_m(T.id_mm, T.od_mm);
+        if (TL_print <= 0 && state.cables.some(c => c.length_m > 0)) { throw new Error("Invalid tank dimensions (TL <= 0)."); }
+
+        // --- Calculate Summary Stats Directly ---
+        let print_maxTop_mm = 0;
+        let print_totalWeight_t = 0;
+        let print_totalLen_m = 0;
+        placed.forEach(p => {
+            print_maxTop_mm = Math.max(print_maxTop_mm, p.y + p.r);
+            print_totalLen_m += TL_print;
+            const cableForTurn = state.cables[p.cableIndex];
+            if (cableForTurn) {
+                print_totalWeight_t += (cableForTurn.kgpm || 0) * TL_print / 1000.0;
+            }
+        });
+
+        // --- Get original SVG dimensions for viewBox ---
+        const viewBoxWidth = lastCtx.W || 800;
+        const viewBoxHeight = lastCtx.H || 600;
+
+        // --- Prepare SVG Clone ---
+        const svgClone = svg.cloneNode(true);
+        const sceneClone = svgClone.querySelector('#scene');
+        if (!sceneClone) throw new Error("Could not find #scene group in SVG clone.");
+        svgClone.setAttribute('viewBox', `0 0 ${viewBoxWidth} ${viewBoxHeight}`);
+        svgClone.removeAttribute("height");
+        svgClone.style.backgroundColor = "#fff"; svgClone.style.width = "100%"; svgClone.style.height = "auto";
+        svgClone.classList.add("print-mode");
+
+        // --- Adjust circle styles for print mode ---
+        sceneClone.querySelectorAll('circle').forEach(circle => {
+            if (circle.dataset && circle.dataset.name && !circle.closest('[data-end]')) {
+                 const originalFill = circle.getAttribute('fill');
+                 circle.style.fill = 'none'; circle.style.stroke = originalFill; circle.style.strokeWidth = '1.5px'; circle.style.vectorEffect = 'non-scaling-stroke';
+            } else if (circle.closest('[data-end]')) {
+                 circle.style.fill = '#eee'; circle.style.stroke = '#999'; circle.style.strokeWidth = '1';
+            }
+        });
+        svgClone.querySelectorAll('[data-end] text').forEach(text => { text.style.fill = '#555'; });
+
+        // --- Clone Marker Flags (Visually hidden by number labels later, but keep structure if needed) ---
+        // You might choose to remove this if the numbered labels are sufficient
+        g.querySelectorAll('.marker-flag').forEach(originalFlag => { sceneClone.appendChild(originalFlag.cloneNode(true)); });
+
+        // --- Filter Markers & Assign Legend Numbers ---
+        const markers = [];
+        // Iterate over ORIGINAL placed data to find marked elements
+        placed.forEach(p => {
+             // Check the element associated with the placed data
+            if (p.el && p.el.classList.contains('circle--marked') && p.el.dataset.note) {
+                markers.push(p); // Add the placed data item
+            }
+        });
+        markers.sort((a,b) => a.turnIndex - b.turnIndex); // Sort for consistent numbering
+        markers.forEach((marker, index) => { marker.legendNumber = index + 1; }); // Assign number to the placed data item
+
+        // --- Add Numbered Marker Labels to SVG Clone ---
+        const markerLabelGroup = document.createElementNS('http://www.w3.org/2000/svg', 'g');
+        markerLabelGroup.setAttribute('class', 'marker-labels');
+        sceneClone.appendChild(markerLabelGroup); // Append labels to the cloned scene
+
+        markers.forEach(marker => {
+            // Find the corresponding circle *within the clone* using its ID if available, or coordinates/data as fallback
+            // For simplicity, let's re-calculate coordinates based on marker data
+            const cx = lastCtx.xInner_px + (marker.x - T.id_mm/2) * lastCtx.pxPerMm;
+            const cy = lastCtx.yPx(marker.y); // Use yPx converter from lastCtx
+            const r = marker.r * lastCtx.pxPerMm;
+            const num = marker.legendNumber;
+
+            // Draw highlight circle in the clone
+            const highlightCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+            highlightCircle.setAttribute('cx', cx); highlightCircle.setAttribute('cy', cy); highlightCircle.setAttribute('r', r + 2);
+            highlightCircle.setAttribute('fill', 'none'); highlightCircle.setAttribute('stroke', '#dc2626');
+            highlightCircle.setAttribute('stroke-width', '2'); highlightCircle.setAttribute('class', 'nss print-mode-highlight-circle');
+            markerLabelGroup.appendChild(highlightCircle);
+
+            // Position number label inside highlight circle
+            const labelText = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+            labelText.setAttribute('x', cx); labelText.setAttribute('y', cy);
+            labelText.setAttribute('text-anchor', 'middle'); labelText.setAttribute('dominant-baseline', 'central');
+            labelText.setAttribute('font-size', '14px'); labelText.setAttribute('font-weight', 'bold');
+            labelText.setAttribute('fill', '#fff'); labelText.setAttribute('stroke', '#000');
+            labelText.setAttribute('stroke-width', '0.5'); labelText.setAttribute('paint-order', 'stroke');
+            labelText.setAttribute('class', 'nss print-mode-marker-number');
+            labelText.textContent = num;
+            markerLabelGroup.appendChild(labelText);
+        });
+
+        const svgContent = svgClone.outerHTML; // Get final SVG HTML
+
+        // --- Prepare Cable Legend Data (Loading Order - Bottom Up in Table) ---
+        let cableLegendData = [];
+        state.cables.forEach((c, index) => { // Iterate in original (bottom-up visual) order
+            const placedTurnsForCable = placed.filter(p => p.cableIndex === index).length;
+            const cableLenActual = (TL_print > 0) ? placedTurnsForCable * TL_print : 0;
+            const cableWeight = (c.kgpm || 0) * cableLenActual / 1000.0;
+            cableLegendData.push({ name: c.name, length: cableLenActual, weight: cableWeight, od: c.od_mm, color: c.color });
+        });
+        // NO REVERSE here, table loop uses index + 1
+
+        // --- Generate Cable Details Table HTML ---
+        let cableTableHTML = `<h4>Cable Details (Loading Order)</h4><table><thead><tr><th>#</th><th>Name</th><th>OD (mm)</th><th>Length (m)</th><th>Weight (t)</th></tr></thead><tbody>`;
+        if (cableLegendData.length === 0) { cableTableHTML += `<tr><td colspan="5">No cables defined.</td></tr>`; }
+        else if (placed.length === 0 && state.cables.length > 0) { cableTableHTML += `<tr><td colspan="5">Cables defined but not placed. Check Dimensions.</td></tr>`; }
+        else {
+            cableLegendData.forEach((c, index) => { // Index matches loading order #
+              const safeName = c.name.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+              cableTableHTML += `<tr><td>${index + 1}</td><td><span class="color-swatch" style="background-color:${c.color} !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;"></span>${safeName}</td><td>${c.od}</td><td>${c.length.toFixed(0)}</td><td>${c.weight.toFixed(2)}</td></tr>`;
+            });
+        }
+        cableTableHTML += `</tbody></table>`;
+
+         // --- Generate Marker Legend HTML ---
+        let markerLegendHtml = '';
+        if (markers.length > 0) {
+            markerLegendHtml += `<div class="print-section marker-legend"><h4>Marker Legend</h4><table><thead><tr><th>#</th><th>Cable</th><th>Layer</th><th>Turn #</th><th>Height (m)</th><th>Length (m)</th><th>Note</th></tr></thead><tbody>`;
+            // Use the markers array which already has legendNumber assigned
+            markers.forEach((marker) => {
+                const safeCableName = marker.cableName.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                // Get note safely from original element if possible, fallback to empty
+                const safeNote = (marker.el && marker.el.dataset.note || '').replace(/</g, "&lt;").replace(/>/g, "&gt;");
+                const heightM = ((marker.y + marker.r) / 1000).toFixed(3);
+                const lengthM = (marker.turnIndex * TL_print).toFixed(0);
+
+                markerLegendHtml += `<tr><td>${marker.legendNumber}</td><td>${safeCableName}</td><td>${marker.layerIndex || '?'}</td><td>${marker.turnIndex}</td><td>${heightM}</td><td>${lengthM}</td><td>${safeNote}</td></tr>`;
+            });
+            markerLegendHtml += `</tbody></table></div>`;
+        }
+
+        // --- Generate Details Sections HTML ---
+        const tankDetailsHTML = `<div class="print-section"><h4>Tank Dimensions</h4><p>Inner Dia: ${T.id_m.toFixed(2)} m<br>Outer Dia: ${T.od_m.toFixed(2)} m<br>Inner Height: ${T.hi_m.toFixed(2)} m<br>Outer Height: ${T.ho_m.toFixed(2)} m<br>Max Capacity: ${T.maxTonnes > 0 ? T.maxTonnes.toFixed(1) + ' t' : 'No Limit'}</p></div>`;
+        const stowSummaryHTML = `<div class="print-section"><h4>Stow Summary</h4><p>Total Stow Height: ${(print_maxTop_mm / 1000).toFixed(3)} m<br>Total Stow Length: ${print_totalLen_m.toFixed(0)} m<br>Total Stow Weight: ${print_totalWeight_t.toFixed(2)} t ${T.maxTonnes > 0 ? ` (of ${T.maxTonnes.toFixed(1)} t capacity)` : ''}</p></div>`;
+        const cableDetailsHTML = `<div class="print-section">${cableTableHTML}</div>`;
+
+        // --- Combine for Final Content ---
+        const mainContentHTML = `
+          <div class="report-content">
+            <div class="main-column">
+              <div class="print-section">
+                <h3>Side View</h3>
+                <div class="print-svg-container">${svgContent}</div>
+              </div>
+            </div>
+            <div class="sidebar-column">
+              ${tankDetailsHTML}
+              ${stowSummaryHTML}
+              ${cableDetailsHTML}
+              ${markerLegendHtml}
+            </div>
+          </div>`;
+
+        // --- Open Window ---
+        const tankName = ($('tank_name') && $('tank_name').value.trim()) || 'Carousel';
+        const reportWin = openReportWindow(`${tankName} - Stowage Plan - Side View`, mainContentHTML);
+        if (reportWin) { setTimeout(() => { try { reportWin.focus(); /* reportWin.print(); */ } catch(e){ console.error("Print focus error:", e); } }, 750); }
+
+    } catch(error) {
+        console.error("Error in btnPrint:", error);
+        alert(`Error generating print view: ${error.message}. See console.`);
+    }
+  };
+  
+  $('btnSequence').onclick = function(){
+    try {
+        let sequenceData = [];
+        const T_seq = tank();
+        const TL_seq = turnLength_m(T_seq.id_mm, T_seq.od_mm);
+
+        if (!lastCtx || (placed.length === 0 && state.cables.length > 0)) {
+             console.warn("Loading Sequence: 'placed' array empty. Length/Weight based on actual turns might be inaccurate.");
+        }
+
+        // 1. Gather cable data (order matches state.cables - visually bottom-up)
+        state.cables.forEach((c, index) => {
+            const placedTurns = placed.filter(p => p.cableIndex === index).length;
+            const cableLenActual = (placedTurns > 0 && TL_seq > 0) ? placedTurns * TL_seq : c.length_m;
+            const cableWeight = (c.kgpm || 0) * cableLenActual / 1000.0;
+            sequenceData.push({
+                name: c.name, od: c.od_mm, length: cableLenActual,
+                kgpm: c.kgpm || 0, weight: cableWeight, color: c.color
+            });
+        });
+
+        // 2. DO NOT REVERSE (Original order is bottom-up loading)
+        // sequenceData.reverse(); // <-- REMOVED THIS LINE
+
+        // 3. Generate table HTML
+        let tableHTML = `
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Cable Name</th>
+                <th>OD (mm)</th>
+                <th>Est. Length (m)</th>
+                <th>kg/m</th>
+                <th>Est. Weight (t)</th>
+              </tr>
+            </thead>
+            <tbody>`;
+        if (sequenceData.length === 0) {
+            tableHTML += `<tr><td colspan="6">No cables defined or placed.</td></tr>`;
+        } else {
+            // Loop over original order (bottom-up)
+            sequenceData.forEach((c, index) => {
+              const safeName = c.name.replace(/</g, "&lt;").replace(/>/g, "&gt;");
+              tableHTML += `
+                <tr>
+                  <td>${index + 1}</td>
+                  <td><span class="color-swatch" style="background-color:${c.color} !important; -webkit-print-color-adjust: exact; print-color-adjust: exact;"></span>${safeName}</td>
+                  <td>${c.od}</td>
+                  <td>${c.length.toFixed(0)}</td>
+                  <td>${c.kgpm.toFixed(1)}</td>
+                  <td>${c.weight.toFixed(2)}</td>
+                </tr>`;
+            });
+        }
+        tableHTML += `</tbody></table>`;
+
+        // 4. Open report window
+        const tankName = ($('tank_name') && $('tank_name').value.trim()) || 'Carousel';
+        openReportWindow(`${tankName} - Cable Loading Sequence`, tableHTML);
+    } catch(error) {
+        console.error("Error in btnSequence:", error);
+        alert(`Error generating sequence report: ${error.message}. See console.`);
+    }
+  };
+$('btnStowPlan').onclick = function(){
+    try {
+        if (state.cables.length === 0) { alert("Please add cables first."); return; }
+        if (!lastCtx || placed.length === 0) { alert("No cables placed yet. Ensure drawing is up to date."); return; }
+
+        let optionsPrompt = "Select Cable for Layer-Based Stowage Plan:\n" + state.cables.map((c, i) => `${i + 1}: ${c.name}`).join('\n');
+        const selectedIndexStr = prompt(optionsPrompt, "1");
+        if (selectedIndexStr === null) return; // User cancelled
+        const cableIndex = parseInt(selectedIndexStr) - 1;
+        if (isNaN(cableIndex) || cableIndex < 0 || cableIndex >= state.cables.length) { alert("Invalid selection."); return; }
+
+        const selectedCable = state.cables[cableIndex];
+        const T_plan = tank();
+        const TL_cable = turnLength_m(T_plan.id_mm, T_plan.od_mm);
+        if (TL_cable <= 0) { throw new Error("Invalid turn length (TL <= 0). Check tank diameters."); }
+
+        // Filter placed data for the selected cable AND sort by placement order (turnIndex)
+        const cablePlacedData = placed
+            .filter(p => p.cableIndex === cableIndex)
+            .sort((a, b) => a.turnIndex - b.turnIndex);
+
+        if (cablePlacedData.length === 0) {
+            alert(`No turns were placed for cable "${selectedCable.name}". Cannot generate plan.`);
+            return;
+        }
+
+        // --- Group turns into visual LAYERS based on significant Y jumps between consecutive turns ---
+        const layers = []; // Array to hold arrays of turns per layer
+        if (cablePlacedData.length > 0) {
+            let currentLayer = [cablePlacedData[0]]; // Start first layer
+            const radius = selectedCable.od_mm / 2;
+            // More sensitive threshold: Start new layer if jump is > half the radius
+            const yJumpThreshold = radius * 0.85;
+
+            for (let i = 1; i < cablePlacedData.length; i++) {
+                const currentTurn = cablePlacedData[i];
+                const prevTurn = cablePlacedData[i - 1];
+                const deltaY = Math.abs(currentTurn.y - prevTurn.y);
+
+                // If vertical jump between CONSECUTIVE turns is significant, start new layer
+                if (deltaY >= yJumpThreshold) {
+                    layers.push(currentLayer); // Store completed layer
+                    currentLayer = [currentTurn]; // Start new layer with current turn
+                } else {
+                    currentLayer.push(currentTurn); // Add to current layer
+                }
+            }
+            layers.push(currentLayer); // Add the last layer being built
+        }
+
+        // --- Generate Table HTML ---
+        let tableHTML = `
+          <h3>Cable: ${selectedCable.name.replace(/</g, "&lt;").replace(/>/g, "&gt;")}</h3>
+          <p>OD: ${selectedCable.od_mm} mm | Target Length: ${selectedCable.length_m} m</p>
+          <table>
+            <thead>
+              <tr>
+                <th>Layer #</th>
+                <th>Max Layer Height (mm)</th>
+                <th>Turns in Layer</th>
+                <th>Length in Layer (m)</th>
+              </tr>
+            </thead>
+            <tbody>`;
+
+        if (layers.length === 0) {
+            tableHTML += `<tr><td colspan="4">No layers processed for this cable.</td></tr>`;
+        } else {
+            layers.forEach((layerTurns, layerIndex) => {
+                // Calculate max height based on the top of circles in this layer
+                const maxHeight = layerTurns.reduce((max, p) => Math.max(max, p.y + p.r), 0);
+                const turnsInLayer = layerTurns.length;
+                const lengthInLayer = turnsInLayer * TL_cable;
+
+                tableHTML += `
+                    <tr>
+                      <td>${layerIndex + 1}</td>
+                      <td>${maxHeight.toFixed(1)}</td>
+                      <td>${turnsInLayer}</td>
+                      <td>${lengthInLayer.toFixed(2)}</td>
+                    </tr>`;
+            });
+        }
+        tableHTML += `</tbody></table>`;
+        const tankName = ($('tank_name') && $('tank_name').value.trim()) || 'Carousel';
+        openReportWindow(`${tankName} - Layer Stowage Plan - ${selectedCable.name}`, tableHTML);
+     } catch(error) {
+        console.error("Error in btnStowPlan:", error);
+        alert(`Error generating layer stowage plan: ${error.message}. See console.`);
+    }
+  };
+  // ---- Event Binding & Initial Draw ----
+  function bindAll(){
+    ['id_m','od_m','hi_m','ho_m','cap_t'].forEach(function(id){ $(id).addEventListener('input', draw); });
+  	window.addEventListener('resize', draw);
+  }
+  
+  $('btnAdd').onclick = function(){ state.cables.push(makeCable('New Cable','#60a5fa',150,1.00,5000,'core',0)); renderCables(); draw(); };
+// ---- Snow Mode Easter Egg ----
+  (function() {
+    const konamiCode = ['ArrowUp', 'ArrowUp', 'ArrowDown', 'ArrowDown', 'ArrowLeft', 'ArrowRight', 'ArrowLeft', 'ArrowRight'];
+    let konamiIndex = 0;
+    let isSnowing = false;
+    let snowInterval = null;
+    let snowflakes = [];
+    let animationFrameId = null;
+
+    // Creates a single snowflake element
+    function createSnowflake() {
+      const flake = document.createElement('div');
+      const size = Math.random() * 4 + 2; // Size between 2px and 6px
+      const startX = Math.random() * window.innerWidth;
+      const speedY = Math.random() * 2 + 1; // Vertical speed
+      const speedX = Math.random() * 2 - 1; // Horizontal drift (-1 to +1)
+
+      flake.classList.add('snowflake');
+      flake.style.width = `${size}px`;
+      flake.style.height = `${size}px`;
+      flake.style.left = `${startX}px`;
+
+      document.body.appendChild(flake);
+
+      snowflakes.push({
+        element: flake,
+        x: startX,
+        y: -10,
+        speedY: speedY,
+        speedX: speedX,
+        size: size
+      });
+    }
+
+    // Animation loop to move snowflakes
+    function animateSnow() {
+      snowflakes = snowflakes.filter(flakeData => {
+        flakeData.y += flakeData.speedY;
+        flakeData.x += flakeData.speedX;
+
+        // Simple boundary check and slight sway
+        if (flakeData.x < -flakeData.size || flakeData.x > window.innerWidth + flakeData.size || flakeData.y > window.innerHeight) {
+          flakeData.element.remove();
+          return false; // Remove snowflake from array
+        } else {
+          // Apply transform for movement
+          flakeData.element.style.transform = `translate3d(${flakeData.x - parseFloat(flakeData.element.style.left)}px, ${flakeData.y}px, 0)`;
+          // Optional: Add slight wiggle or rotation if desired
+          return true; // Keep snowflake
+        }
+      });
+
+      // Continue animation if still snowing
+      if (isSnowing) {
+        animationFrameId = requestAnimationFrame(animateSnow);
+      }
+    }
+
+    // Toggles snow effect on/off
+    function toggleSnow() {
+      isSnowing = !isSnowing;
+      if (isSnowing) {
+        console.log('❄️ Let it snow! ❄️');
+        // Start creating snowflakes periodically
+        snowInterval = setInterval(createSnowflake, 100); // Adjust interval for density
+        // Start animation loop
+        if (!animationFrameId) {
+             animationFrameId = requestAnimationFrame(animateSnow);
+        }
+      } else {
+        console.log('☀️ Snow stopped.');
+        // Stop creating snowflakes
+        clearInterval(snowInterval);
+        snowInterval = null;
+        // Stop animation loop
+        cancelAnimationFrame(animationFrameId);
+        animationFrameId = null;
+        // Remove existing snowflakes
+        snowflakes.forEach(flakeData => flakeData.element.remove());
+        snowflakes = [];
+      }
+    }
+
+    // Listen for Konami code sequence
+    document.addEventListener('keydown', function(e) {
+      if (e.key.toLowerCase() === konamiCode[konamiIndex].toLowerCase()) {
+        konamiIndex++;
+        if (konamiIndex === konamiCode.length) {
+          toggleSnow(); // Code entered correctly!
+          konamiIndex = 0; // Reset for next time
+        }
+      } else {
+        konamiIndex = 0; // Wrong key, reset sequence
+      }
+    });
+    
+    // ---- Light/Dark Mode Toggle ----
+  (function() {
+    const toggleBtn = $('btnToggleTheme');
+    const body = document.body;
+    const prefersDarkScheme = window.matchMedia("(prefers-color-scheme: dark)");
+
+    // Function to apply theme based on preference
+    function applyTheme(theme) {
+      if (theme === 'dark') {
+        body.classList.remove('light-mode');
+        toggleBtn.textContent = '☀️'; // Sun icon for switching to light
+        toggleBtn.title = "Switch to Light Mode";
+      } else {
+        body.classList.add('light-mode');
+        toggleBtn.textContent = '🌙'; // Moon icon for switching to dark
+        toggleBtn.title = "Switch to Dark Mode";
+      }
+    }
+
+    // Check localStorage for saved theme
+    const savedTheme = localStorage.getItem('theme');
+    let currentTheme;
+
+    if (savedTheme) {
+      currentTheme = savedTheme;
+    } else {
+      // Use system preference if no theme saved
+      currentTheme = prefersDarkScheme.matches ? 'dark' : 'light';
+    }
+
+    // Apply the initial theme
+    applyTheme(currentTheme);
+
+    // Add click listener to the button
+    toggleBtn.addEventListener('click', () => {
+      // Toggle the theme
+      currentTheme = body.classList.contains('light-mode') ? 'dark' : 'light';
+      // Apply the new theme
+      applyTheme(currentTheme);
+      // Save the preference to localStorage
+      localStorage.setItem('theme', currentTheme);
+    });
+
+    // Optional: Listen for system preference changes
+    prefersDarkScheme.addEventListener('change', (e) => {
+        // Only change if no theme explicitly saved by user
+        if (!localStorage.getItem('theme')) {
+            currentTheme = e.matches ? 'dark' : 'light';
+            applyTheme(currentTheme);
+        }
+    });
+
+  })(); // End Theme Toggle IIFE
+
+  })(); // End Snow Mode IIFE
+  renderCables();
+  bindAll();
+  draw();
+
+})(); // End of IIFE
+</script>
+</body>
+</html>
